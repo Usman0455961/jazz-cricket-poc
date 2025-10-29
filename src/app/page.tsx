@@ -5,7 +5,7 @@ import { JSX, useEffect, useState } from 'react';
 
 export default function Home(): JSX.Element {
   const [products, setProducts] = useState<string[]>([]);
-  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -15,10 +15,9 @@ export default function Home(): JSX.Element {
       window.JazzAuth?.init({
         clientId: 'cricket',
         containerId: 'jazz-auth-container',
-        buttonColor: '#16a34a',
-        onLogin: (t) => {
-          setToken(t);
-          fetchProducts('cricket', t).then(setProducts).catch(console.error);
+        buttonColor: '#16a34a', // Green
+        onLogin: () => {
+          loadSession();
         },
       });
     };
@@ -26,21 +25,36 @@ export default function Home(): JSX.Element {
     return () => script.remove();
   }, []);
 
+  const loadSession = async () => {
+    setLoading(true);
+    const token = await getToken();
+    if (token) {
+      try {
+        const data = await fetchProducts('cricket', token);
+        setProducts(data);
+      } catch (err) {
+        console.error('Failed to load products:', err);
+      }
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const load = async () => {
-      const t = await getToken();
-      setToken(t);
-      if (t) fetchProducts('cricket', t).then(setProducts).catch(console.error);
-    };
-    load();
+    loadSession();
   }, []);
 
-  if (token) {
+  if (loading) {
+    return <div className="p-8 text-center">Checking session...</div>;
+  }
+
+  if (products.length > 0) {
     return (
       <div className="p-8 max-w-md mx-auto bg-green-50 rounded-xl">
         <h1 className="text-2xl font-bold text-green-800 mb-4">Jazz Cricket (Logged In)</h1>
         <ul className="space-y-2">
-          {products.map(p => <li key={p} className="bg-white p-3 rounded border">{p}</li>)}
+          {products.map(p => (
+            <li key={p} className="bg-white p-3 rounded border">{p}</li>
+          ))}
         </ul>
       </div>
     );

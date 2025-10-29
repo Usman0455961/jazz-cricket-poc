@@ -11,15 +11,15 @@ export default function CallbackPage(): JSX.Element {
   useEffect(() => {
     const exchange = async () => {
       if (!code || !client_id) return;
+
       const res = await fetch('http://localhost:4000/token', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, client_id }),
       });
+
       if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('jazz_token', data.access_token);
         window.opener?.postMessage('login-success', '*');
         window.close();
       }
